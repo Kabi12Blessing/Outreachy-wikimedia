@@ -87,15 +87,16 @@
     .panel.active { display: block; }
 
     /* INFO BOX */
-    .infobox {
-      background: #eaf3fb;
-      border: 1px solid #a2a9b1;
-      border-left: 4px solid #3366cc;
-      padding: 12px 16px;
-      margin-bottom: 20px;
-      font-size: 13px;
-      line-height: 1.5;
-    }
+   .infobox {
+    background: #eaf3fb;
+    border: 1px solid #a2a9b1;
+    border-left: 4px solid #3366cc;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    margin-left: 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
 
     /* FORM */
     .form-row {
@@ -721,22 +722,15 @@
     </div>
 
     <!-- VE TOOLBAR -->
-    <div class="ve-toolbar">
-      <button class="ve-btn"><b>B</b></button>
-      <button class="ve-btn"><i>I</i></button>
-      <div class="ve-sep"></div>
-      <button class="ve-btn">Heading ▼</button>
-      <div class="ve-sep"></div>
-      <button class="ve-btn ve-cite-btn" onclick="openAddRef()">
-         Cite
-      </button>
-      <div class="ve-sep"></div>
-      <button class="ve-btn">Insert ▼</button>
-      <div style="margin-left:auto; display:flex; gap:6px;">
-        <button class="btn">Cancel</button>
-        <button class="btn btn-primary">Publish changes...</button>
-      </div>
+   <div class="ve-toolbar">
+    <button class="ve-btn ve-cite-btn" onclick="openAddRef()">
+      Cite
+    </button>
+    <div style="margin-left:auto; display:flex; gap:6px;">
+      <button class="btn">Cancel</button>
+      <button class="btn btn-primary">Publish changes</button>
     </div>
+  </div>
 
     <!-- Article editing area -->
     <div class="ve-article">
