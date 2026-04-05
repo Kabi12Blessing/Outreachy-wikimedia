@@ -115,7 +115,7 @@ https://kabi12blessing.github.io/Outreachy-wikimedia/prototype/refchecker.html
 
 A walkthrough of the prototype showing the duplicate reference detector working on real Wikipedia articles.
 
-[[Click here to Watch the demo video](https://youtube.com/shorts/oYQduK5fN1Q?feature=share)]
+[[Click here to Watch the demo video](https://www.youtube.com/shorts/o2f7z-q3Pc4)]
 
 ## Microtasks
 
