@@ -43,13 +43,7 @@ I used `parseInt()` on the day to convert it from a string to a number before in
 I then built the formatted sentence for each article using a template literal and displayed everything in the `#results` element using `innerText`. I added comments throughout the code explaining each step.
 
 **How to run:**
-
-Clone the repository and open the file in any browser:
-```bash
-git clone https://github.com/Kabi12Blessing/Outreachy-wikimedia.git
-cd Outreachy-wikimedia
-open "Task 1 - Intern.html"
-```
+https://kabi12blessing.github.io/Outreachy-wikimedia/Task%201%20-%20Intern.html
 
 ## Task 2 - task2.py
 
@@ -114,14 +108,8 @@ python refchecker.py
 
 **How to open the HTML demo:**
 
-Clone the repository and open the file in any browser:
-```bash
-git clone https://github.com/Kabi12Blessing/Outreachy-wikimedia.git
-cd Outreachy-wikimedia/prototype
-open refchecker.html
-```
+https://kabi12blessing.github.io/Outreachy-wikimedia/prototype/refchecker.html
 
-Or download `prototype/refchecker.html` and open it directly in your browser. No server or installation needed.
 
 ## Demo Video
 
