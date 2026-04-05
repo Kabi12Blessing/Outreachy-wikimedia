@@ -149,13 +149,13 @@
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .btn-primary {
-      background: linear-gradient(to bottom, #3b72b9, #2a52a0);
+      background: #3366cc;
       color: #fff;
       border-color: #2a52a0;
     }
-
+    
     .btn-primary:hover {
-      background: linear-gradient(to bottom, #4a81c8, #3361af);
+      background: #2a52a0;
     }
 
     /* QUICK LINKS */
@@ -330,14 +330,14 @@
     }
 
     .ve-cite-btn {
-      background: linear-gradient(to bottom, #3b72b9, #2a52a0);
+      background: #3366cc;
       color: #fff;
       font-weight: bold;
       border-color: #2a52a0;
     }
-
+    
     .ve-cite-btn:hover {
-      background: linear-gradient(to bottom, #4a81c8, #3361af);
+      background: #2a52a0;
       color: #fff;
     }
 
@@ -560,10 +560,12 @@
 
 <!-- HEADER -->
 <div class="header">
-  <h1>🔍 RefCheck — Wikipedia Duplicate Reference Detector</h1>
+  <h1>Wikipedia Duplicate Reference Detector</h1>
   <p>
-    A prototype for Lusophone Wishlist Wish #3 —
-    detecting duplicate references in Wikipedia articles.
+    This is a small prototype built to demonstrate one of the
+    core ideas behind Lusophone Wishlist Wish 3, detecting when
+    a Wikipedia editor is about to add a reference that already
+    exists in the article.
     Built by EileenBlessing · Outreachy Round 32.
   </p>
 </div>
@@ -619,7 +621,7 @@
     </div>
 
     <div class="loading" id="scanLoading">
-      ⏳ <span id="scanLoadingMsg">Fetching article...</span>
+      <span id="scanLoadingMsg">Fetching article...</span>
     </div>
 
     <div class="msg-error" id="scanError">
@@ -658,14 +660,14 @@
       </table>
 
       <div class="msg-success" id="noDupesMsg">
-        ✅ <strong>No duplicate references found.</strong>
+        <strong>No duplicate references found.</strong>
         All references in this article are unique.
       </div>
 
       <div id="dupesSection" style="display:none;">
 
         <div class="msg-warning" id="dupesWarning">
-          ⚠️ <strong>Duplicate references detected.</strong>
+          <strong>Duplicate references detected.</strong>
           The references below share the same URL, DOI or ISBN
           and should be merged or reused.
         </div>
@@ -715,7 +717,7 @@
     </div>
 
     <div class="loading" id="editorLoading">
-      ⏳ Loading article references...
+      Loading article references...
     </div>
 
     <!-- VE TOOLBAR -->
@@ -726,7 +728,7 @@
       <button class="ve-btn">Heading ▼</button>
       <div class="ve-sep"></div>
       <button class="ve-btn ve-cite-btn" onclick="openAddRef()">
-        📎 Cite
+         Cite
       </button>
       <div class="ve-sep"></div>
       <button class="ve-btn">Insert ▼</button>
@@ -763,7 +765,7 @@
 
     <!-- Add reference panel -->
     <div class="add-ref-panel" id="addRefPanel">
-      <h3>📎 Add a Reference</h3>
+      <h3> Add a Reference</h3>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">
@@ -804,7 +806,6 @@
 <!-- DUPLICATE ALERT POPUP -->
 <div class="dupe-alert" id="dupeAlert">
   <div class="dupe-alert-header">
-    <span>⚠️</span>
     <span>Duplicate Reference Detected</span>
   </div>
   <div class="dupe-alert-body">
@@ -815,13 +816,13 @@
     <div class="dupe-existing-content" id="dupeExistingContent"></div>
     <div class="dupe-actions">
       <button class="btn btn-primary" onclick="closeDupeAlert('reuse')">
-        ♻️ Reuse existing reference
+         Reuse existing reference
       </button>
       <button class="btn" onclick="closeDupeAlert('continue')">
         Add anyway
       </button>
       <button class="btn" onclick="closeDupeAlert('dismiss')">
-        ✕ Cancel
+         Cancel
       </button>
     </div>
   </div>
@@ -1051,8 +1052,8 @@
         affectedIndices.size;
       document.getElementById('statDupesNote').textContent =
         dupes.length === 0
-          ? '✅ None found'
-          : '⚠️ ' + dupes.length + ' group(s) found';
+          ? 'None found'
+          :  dupes.length + ' group(s) found';
 
       if (dupes.length === 0) {
         document.getElementById('noDupesMsg').classList.add('active');
@@ -1176,11 +1177,11 @@
       }
 
       document.getElementById('existingRefs').classList.add('active');
-      showToast('✅ Loaded ' + articleRefs.length +
+      showToast('Loaded ' + articleRefs.length +
         ' references from "' + result.title + '"');
     })
     .catch(function(err) {
-      showToast('❌ Error: ' + err.message);
+      showToast('Error: ' + err.message);
     })
     .finally(function() {
       document.getElementById('editorLoading').classList.remove('active');
@@ -1193,7 +1194,7 @@
 
   function openAddRef() {
     if (articleRefs.length === 0) {
-      showToast('⚠️ Please load an article first');
+      showToast('Please load an article first');
       return;
     }
     document.getElementById('addRefPanel').classList.add('active');
@@ -1272,7 +1273,7 @@
 
     if (inputIds.length === 0) {
       closeAddRef();
-      showToast('✅ Reference added — no duplicate found');
+      showToast('Reference added — no duplicate found');
       return;
     }
 
@@ -1300,7 +1301,7 @@
       showDupeAlert(found.key, found.val);
     } else {
       closeAddRef();
-      showToast('✅ Reference added — no duplicate found');
+      showToast('Reference added — no duplicate found');
     }
   }
 
@@ -1338,9 +1339,9 @@
     closeAddRef();
 
     if (action === 'reuse') {
-      showToast('♻️ Existing reference reused — no duplicate created!');
+      showToast('Existing reference reused — no duplicate created!');
     } else if (action === 'continue') {
-      showToast('➕ New reference added (duplicate noted)');
+      showToast('New reference added (duplicate noted)');
     }
   }
 
