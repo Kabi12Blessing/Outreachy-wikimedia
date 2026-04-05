@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  RefCheck - Wikipedia Duplicate Reference Detector
+  Author: Eileen Blessing Mbong Kabi (EileenBlessing)
+  Outreachy Round 32 - Wikimedia Foundation
+  Lusophone Wishlist - Wish 3
+
+  NOTE: This is a contribution-phase prototype demonstrating
+  the core logic of Wish 3. It is not a production tool.
+  The real implementation would integrate directly into the
+  Visual Editor codebase following MediaWiki standards.
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RefCheck - Wikipedia Duplicate Reference Detector</title>
+  <style>
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: sans-serif;
+      background: #f8f9fa;
+      color: #202122;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* HEADER */
+    .header {
+      background: #fff;
+      border-bottom: 1px solid #a2a9b1;
+      padding: 16px 32px;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: bold;
+      color: #202122;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: #54595d;
+    }
+
+    /* MAIN */
+    .main {
+      max-width: 860px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #a2a9b1;
+      margin-bottom: 24px;
+    }
+
+    .tab {
+      padding: 8px 20px;
+      border: 1px solid #a2a9b1;
+      border-bottom: none;
+      background: #eaecf0;
+      color: #3366cc;
+      cursor: pointer;
+      font-size: 13px;
+      margin-right: 4px;
+      margin-bottom: -1px;
+      border-radius: 2px 2px 0 0;
+    }
+
+    .tab:hover { background: #fff; }
+
+    .tab.active {
+      background: #fff;
+      color: #202122;
+      font-weight: bold;
+      border-bottom: 1px solid #fff;
+    }
+
+    /* TAB PANELS */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* INFO BOX */
+    .infobox {
+      background: #eaf3fb;
+      border: 1px solid #a2a9b1;
+      border-left: 4px solid #3366cc;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* FORM */
+    .form-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      align-items: flex-end;
+    }
+
+    .form-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-label {
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .input {
+      border: 1px solid #a2a9b1;
+      padding: 7px 10px;
+      font-size: 14px;
+      border-radius: 2px;
+      outline: none;
+      width: 100%;
+      font-family: sans-serif;
+    }
+
+    .input:focus {
+      border-color: #3366cc;
+      box-shadow: 0 0 0 1px #3366cc;
+    }
+
+    .btn {
+      padding: 7px 16px;
+      border: 1px solid #a2a9b1;
+      background: linear-gradient(to bottom, #f8f9fa, #e8e8e8);
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 2px;
+      white-space: nowrap;
+      font-family: sans-serif;
+      color: #202122;
+      height: 36px;
+    }
+
+    .btn:hover { background: linear-gradient(to bottom, #fff, #eee); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary {
+      background: linear-gradient(to bottom, #3b72b9, #2a52a0);
+      color: #fff;
+      border-color: #2a52a0;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(to bottom, #4a81c8, #3361af);
+    }
+
+    /* QUICK LINKS */
+    .quick-links {
+      font-size: 13px;
+      color: #54595d;
+      margin-bottom: 20px;
+    }
+
+    .quick-link {
+      color: #3366cc;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+
+    .quick-link:hover { text-decoration: underline; }
+
+    /* MESSAGES */
+    .loading {
+      display: none;
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border: 1px solid #a2a9b1;
+      font-size: 13px;
+      color: #54595d;
+      margin-bottom: 16px;
+    }
+
+    .loading.active { display: block; }
+
+    .msg-success {
+      background: #d5fdf4;
+      border: 1px solid #a3d3c7;
+      border-left: 4px solid #00af89;
+      padding: 12px 16px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .msg-success.active { display: block; }
+
+    .msg-warning {
+      background: #fef6e7;
+      border: 1px solid #c9a227;
+      border-left: 4px solid #f0a500;
+      padding: 12px 16px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .msg-warning.active { display: block; }
+
+    .msg-error {
+      background: #fee7e6;
+      border: 1px solid #c9a29a;
+      border-left: 4px solid #cc3300;
+      padding: 12px 16px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .msg-error.active { display: block; }
+
+    /* RESULTS */
+    .results { display: none; }
+    .results.active { display: block; }
+
+    /* TABLES */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    .table th {
+      background: #eaecf0;
+      border: 1px solid #a2a9b1;
+      padding: 8px 12px;
+      text-align: left;
+      font-weight: bold;
+    }
+
+    .table td {
+      border: 1px solid #a2a9b1;
+      padding: 8px 12px;
+      vertical-align: top;
+    }
+
+    .table tr:nth-child(even) td { background: #f8f9fa; }
+
+    .stat-num { font-weight: bold; font-size: 15px; }
+    .stat-warn { color: #cc3300; }
+    .stat-ok { color: #008800; }
+
+    /* TYPE BADGES */
+    .badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 2px;
+      font-size: 11px;
+      font-weight: bold;
+      font-family: monospace;
+    }
+
+    .badge-url { background: #fee; color: #c00; border: 1px solid #faa; }
+    .badge-doi { background: #ffe8cc; color: #b05000; border: 1px solid #fca; }
+    .badge-isbn { background: #eef; color: #006; border: 1px solid #aaf; }
+
+    .mono {
+      font-family: monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .ref-note {
+      font-family: monospace;
+      font-size: 12px;
+      color: #54595d;
+      margin-top: 3px;
+      word-break: break-all;
+    }
+
+    /* SECTION HEADING */
+    .section-heading {
+      font-size: 18px;
+      font-weight: normal;
+      border-bottom: 1px solid #a2a9b1;
+      padding-bottom: 4px;
+      margin: 20px 0 12px 0;
+      font-family: Georgia, serif;
+    }
+
+    /* ===== TAB 2: EDITOR ===== */
+
+    /* VE Toolbar */
+    .ve-toolbar {
+      background: #fff;
+      border: 1px solid #a2a9b1;
+      border-bottom: none;
+      padding: 6px 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .ve-btn {
+      background: none;
+      border: 1px solid transparent;
+      padding: 4px 10px;
+      cursor: pointer;
+      border-radius: 2px;
+      font-size: 13px;
+      font-family: sans-serif;
+      color: #202122;
+    }
+
+    .ve-btn:hover {
+      background: #eaecf0;
+      border-color: #a2a9b1;
+    }
+
+    .ve-sep {
+      width: 1px;
+      height: 20px;
+      background: #a2a9b1;
+      margin: 0 2px;
+    }
+
+    .ve-cite-btn {
+      background: linear-gradient(to bottom, #3b72b9, #2a52a0);
+      color: #fff;
+      font-weight: bold;
+      border-color: #2a52a0;
+    }
+
+    .ve-cite-btn:hover {
+      background: linear-gradient(to bottom, #4a81c8, #3361af);
+      color: #fff;
+    }
+
+    /* Article area */
+    .ve-article {
+      border: 1px solid #a2a9b1;
+      padding: 20px 24px;
+      background: #fff;
+      min-height: 200px;
+      font-family: Georgia, serif;
+      font-size: 14px;
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+
+    /* Add ref panel */
+    .add-ref-panel {
+      background: #f8f9fa;
+      border: 1px solid #a2a9b1;
+      padding: 16px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .add-ref-panel.active { display: block; }
+
+    .add-ref-panel h3 {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #a2a9b1;
+    }
+
+    /* Input wrapper for autocomplete */
+    .input-wrapper {
+      position: relative;
+      flex: 1;
+    }
+
+    .autocomplete {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #a2a9b1;
+      border-top: none;
+      z-index: 100;
+      max-height: 160px;
+      overflow-y: auto;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .autocomplete.active { display: block; }
+
+    .autocomplete-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: monospace;
+      border-bottom: 1px solid #eaecf0;
+    }
+
+    .autocomplete-item:hover { background: #eaf3fb; }
+
+    .autocomplete-label {
+      font-family: sans-serif;
+      font-weight: bold;
+      color: #3366cc;
+      font-size: 11px;
+    }
+
+    /* Existing refs */
+    .existing-refs {
+      border: 1px solid #a2a9b1;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .existing-refs.active { display: block; }
+
+    .existing-refs-header {
+      background: #eaecf0;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: bold;
+      border-bottom: 1px solid #a2a9b1;
+    }
+
+    .existing-refs-list {
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    .existing-ref-row {
+      padding: 6px 12px;
+      border-bottom: 1px solid #eaecf0;
+      font-size: 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .ref-num {
+      color: #3366cc;
+      font-weight: bold;
+      min-width: 30px;
+      flex-shrink: 0;
+    }
+
+    .ref-content {
+      font-family: monospace;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+
+    /* OVERLAY */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+    }
+
+    .overlay.active { display: block; }
+
+    /* DUPLICATE ALERT */
+    .dupe-alert {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 2px solid #f0a500;
+      border-radius: 2px;
+      width: 500px;
+      max-width: 90vw;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+
+    .dupe-alert.active { display: block; }
+
+    .dupe-alert-header {
+      background: #fef6e7;
+      border-bottom: 1px solid #f0a500;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .dupe-alert-body { padding: 16px; }
+
+    .dupe-alert-msg {
+      font-size: 13px;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .dupe-existing-label {
+      font-size: 11px;
+      font-weight: bold;
+      color: #54595d;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .dupe-existing-content {
+      background: #f8f9fa;
+      border: 1px solid #a2a9b1;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-family: monospace;
+      margin-bottom: 16px;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    .dupe-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .dupe-actions .btn { flex: 1; text-align: center; }
+
+    /* TOAST */
+    .toast {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00af89;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 2px;
+      font-size: 13px;
+      z-index: 2000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .toast.active { display: block; }
+
+    @media (max-width: 600px) {
+      .form-row { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>🔍 RefCheck — Wikipedia Duplicate Reference Detector</h1>
+  <p>
+    A prototype for Lusophone Wishlist Wish #3 —
+    detecting duplicate references in Wikipedia articles.
+    Built by EileenBlessing · Outreachy Round 32.
+  </p>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('scanner', this)">
+      Article Scanner
+    </div>
+    <div class="tab" onclick="switchTab('editor', this)">
+      Editor Simulation
+    </div>
+  </div>
+
+  <!-- ============ TAB 1: SCANNER ============ -->
+  <div class="panel active" id="tab-scanner">
+
+    <div class="infobox">
+      Enter any Wikipedia article title below. This tool fetches
+      the article using the real Wikipedia API, extracts all
+      references, normalizes URLs, DOIs and ISBNs, and reports
+      which ones appear more than once in the article.
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Wikipedia Article Title</label>
+        <input
+          type="text"
+          class="input"
+          id="scanInput"
+          placeholder="e.g. Marta (footballer)"
+        />
+      </div>
+      <button
+        class="btn btn-primary"
+        id="scanBtn"
+        onclick="scanArticle()"
+      >
+        Scan References
+      </button>
+    </div>
+
+    <div class="quick-links">
+      Try these:
+      <span class="quick-link" onclick="quickScan('Marta (footballer)')">Marta (footballer)</span>
+      <span class="quick-link" onclick="quickScan('Covid 19')">Covid-19</span>
+      <span class="quick-link" onclick="quickScan('Brazil national football team')">Brazil national football team</span>
+      <span class="quick-link" onclick="quickScan('Python (programming language)')">Python (programming language)</span>
+    </div>
+
+    <div class="loading" id="scanLoading">
+      ⏳ <span id="scanLoadingMsg">Fetching article...</span>
+    </div>
+
+    <div class="msg-error" id="scanError">
+      <strong>Error:</strong> <span id="scanErrorMsg"></span>
+    </div>
+
+    <div class="results" id="scanResults">
+
+      <h2 class="section-heading" id="scanResultsTitle"></h2>
+
+      <table class="table">
+        <tr>
+          <th>Metric</th>
+          <th>Value</th>
+          <th>Notes</th>
+        </tr>
+        <tr>
+          <td>Total references found</td>
+          <td><span class="stat-num" id="statTotal">—</span></td>
+          <td>All &lt;ref&gt; tags extracted from article wikitext</td>
+        </tr>
+        <tr>
+          <td>Duplicate groups detected</td>
+          <td>
+            <span class="stat-num stat-warn" id="statDupes">—</span>
+          </td>
+          <td id="statDupesNote">—</td>
+        </tr>
+        <tr>
+          <td>References affected</td>
+          <td>
+            <span class="stat-num stat-warn" id="statAffected">—</span>
+          </td>
+          <td>These could be merged or reused</td>
+        </tr>
+      </table>
+
+      <div class="msg-success" id="noDupesMsg">
+        ✅ <strong>No duplicate references found.</strong>
+        All references in this article are unique.
+      </div>
+
+      <div id="dupesSection" style="display:none;">
+
+        <div class="msg-warning" id="dupesWarning">
+          ⚠️ <strong>Duplicate references detected.</strong>
+          The references below share the same URL, DOI or ISBN
+          and should be merged or reused.
+        </div>
+
+        <h2 class="section-heading">Duplicate References</h2>
+
+        <table class="table" id="dupeTable">
+          <tr>
+            <th style="width:36px">#</th>
+            <th style="width:65px">Type</th>
+            <th>Identifier</th>
+            <th style="width:130px">Found in Refs</th>
+          </tr>
+        </table>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ============ TAB 2: EDITOR SIMULATION ============ -->
+  <div class="panel" id="tab-editor">
+
+    <div class="infobox">
+      This simulates how the duplicate reference checker would work
+      <strong>inside the Wikipedia Visual Editor</strong> while an
+      editor is actively editing. Load a real Wikipedia article,
+      then click <strong>Cite</strong> and enter a URL that already
+      exists in the article to see the duplicate alert.
+    </div>
+
+    <!-- Load article -->
+    <div class="form-row" style="margin-bottom:16px;">
+      <div class="form-group">
+        <label class="form-label">Load a Wikipedia article into the editor</label>
+        <input
+          type="text"
+          class="input"
+          id="editorInput"
+          placeholder="e.g. Marta (footballer)"
+        />
+      </div>
+      <button class="btn btn-primary" onclick="loadEditorArticle()">
+        Load Article
+      </button>
+    </div>
+
+    <div class="loading" id="editorLoading">
+      ⏳ Loading article references...
+    </div>
+
+    <!-- VE TOOLBAR -->
+    <div class="ve-toolbar">
+      <button class="ve-btn"><b>B</b></button>
+      <button class="ve-btn"><i>I</i></button>
+      <div class="ve-sep"></div>
+      <button class="ve-btn">Heading ▼</button>
+      <div class="ve-sep"></div>
+      <button class="ve-btn ve-cite-btn" onclick="openAddRef()">
+        📎 Cite
+      </button>
+      <div class="ve-sep"></div>
+      <button class="ve-btn">Insert ▼</button>
+      <div style="margin-left:auto; display:flex; gap:6px;">
+        <button class="btn">Cancel</button>
+        <button class="btn btn-primary">Publish changes...</button>
+      </div>
+    </div>
+
+    <!-- Article editing area -->
+    <div class="ve-article">
+      <div
+        id="veTitle"
+        style="font-size:20px; margin-bottom:8px; font-weight:bold;"
+      >
+        Load an article above to begin editing
+      </div>
+      <div id="vePreview" style="color:#54595d; font-style:italic;">
+        Once loaded, click <strong>Cite</strong> in the toolbar
+        to add a new reference. If the reference already exists
+        in the article, a duplicate alert will appear.
+      </div>
+    </div>
+
+    <!-- Existing refs -->
+    <div class="existing-refs" id="existingRefs">
+      <div class="existing-refs-header">
+        References currently in this article
+        (<span id="existingRefsCount">0</span>) —
+        these are checked when you add a new reference
+      </div>
+      <div class="existing-refs-list" id="existingRefsList"></div>
+    </div>
+
+    <!-- Add reference panel -->
+    <div class="add-ref-panel" id="addRefPanel">
+      <h3>📎 Add a Reference</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">
+            Enter a URL, DOI or ISBN to cite:
+          </label>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              class="input"
+              id="newRefInput"
+              placeholder="https://example.com or 10.1000/xyz or ISBN..."
+              oninput="onRefInput(this.value)"
+              autocomplete="off"
+            />
+            <div class="autocomplete" id="autocomplete"></div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="submitRef()">
+          Insert Reference
+        </button>
+        <button class="btn" onclick="closeAddRef()">Cancel</button>
+      </div>
+      <div style="font-size:12px; color:#54595d; margin-top:4px;">
+        As you type, this tool checks if the reference already
+        exists in the article.
+      </div>
+    </div>
+
+  </div>
+  <!-- end tab-editor -->
+
+</div>
+<!-- end main -->
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeDupeAlert('dismiss')"></div>
+
+<!-- DUPLICATE ALERT POPUP -->
+<div class="dupe-alert" id="dupeAlert">
+  <div class="dupe-alert-header">
+    <span>⚠️</span>
+    <span>Duplicate Reference Detected</span>
+  </div>
+  <div class="dupe-alert-body">
+    <div class="dupe-alert-msg" id="dupeAlertMsg"></div>
+    <div class="dupe-existing-label">
+      Existing reference in this article:
+    </div>
+    <div class="dupe-existing-content" id="dupeExistingContent"></div>
+    <div class="dupe-actions">
+      <button class="btn btn-primary" onclick="closeDupeAlert('reuse')">
+        ♻️ Reuse existing reference
+      </button>
+      <button class="btn" onclick="closeDupeAlert('continue')">
+        Add anyway
+      </button>
+      <button class="btn" onclick="closeDupeAlert('dismiss')">
+        ✕ Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  var articleRefs = [];
+  var identifierMap = {};
+
+  // ============================================================
+  // TAB SWITCHING
+  // ============================================================
+  function switchTab(name, el) {
+    document.querySelectorAll('.panel').forEach(function(p) {
+      p.classList.remove('active');
+    });
+    document.querySelectorAll('.tab').forEach(function(t) {
+      t.classList.remove('active');
+    });
+    document.getElementById('tab-' + name).classList.add('active');
+    el.classList.add('active');
+  }
+
+  // ============================================================
+  // NORMALIZATION
+  // Cleans up identifiers so they can be compared fairly
+  // ============================================================
+  function normalizeURL(url) {
+    url = url.trim().toLowerCase();
+    url = url.replace(/^https?:\/\//, '');
+    url = url.replace(/^www\./, '');
+    url = url.replace(/\/$/, '');
+    return url;
+  }
+
+  function normalizeDOI(doi) {
+    doi = doi.trim().toLowerCase();
+    doi = doi.replace(/^https?:\/\/doi\.org\//, '');
+    doi = doi.replace(/^doi:/, '');
+    return doi;
+  }
+
+  function normalizeISBN(isbn) {
+    return isbn.replace(/[\s\-]/g, '').toUpperCase();
+  }
+
+  // ============================================================
+  // EXTRACT IDENTIFIERS FROM A REFERENCE STRING
+  // Pulls out all URLs, DOIs and ISBNs from a reference
+  // ============================================================
+  function extractIdentifiers(content) {
+    var ids = [];
+
+    // URLs
+    var urlMatches = content.match(/https?:\/\/[^\s|<>"'\]]+/g) || [];
+    urlMatches.forEach(function(url) {
+      var n = normalizeURL(url);
+      if (n.length > 5) {
+        ids.push({ type: 'URL', raw: url, normalized: n });
+      }
+    });
+
+    // DOIs
+    var doiPattern = /(?:doi\s*=\s*|doi:|https?:\/\/doi\.org\/)([^\s|<>"'\]]+)/gi;
+    var m;
+    while ((m = doiPattern.exec(content)) !== null) {
+      var n = normalizeDOI(m[1]);
+      if (n.length > 3) {
+        ids.push({ type: 'DOI', raw: m[1], normalized: 'doi:' + n });
+      }
+    }
+
+    // ISBNs
+    var isbnPattern = /isbn\s*=\s*([0-9\-X ]{9,17})/gi;
+    while ((m = isbnPattern.exec(content)) !== null) {
+      var n = normalizeISBN(m[1]);
+      if (n.length >= 10) {
+        ids.push({ type: 'ISBN', raw: m[1], normalized: 'isbn:' + n });
+      }
+    }
+
+    return ids;
+  }
+
+  // ============================================================
+  // FETCH ARTICLE FROM WIKIPEDIA API
+  // ============================================================
+  function fetchArticle(title) {
+    var url =
+      'https://en.wikipedia.org/w/api.php' +
+      '?action=parse' +
+      '&page=' + encodeURIComponent(title) +
+      '&prop=wikitext' +
+      '&format=json' +
+      '&redirects=true' +
+      '&origin=*';
+
+    return fetch(url, {
+      headers: {
+        'User-Agent':
+          'EileenBlessing/OutreachyPrototype/1.0 ' +
+          '(https://github.com/Kabi12Blessing/)'
+      }
+    })
+    .then(function(response) {
+      if (!response.ok) {
+        throw new Error('Request failed with status ' + response.status);
+      }
+      return response.json();
+    })
+    .then(function(data) {
+      if (data.error) {
+        throw new Error('Article not found: ' + data.error.info);
+      }
+      return {
+        wikitext: data.parse.wikitext['*'],
+        title: data.parse.title
+      };
+    });
+  }
+
+  // ============================================================
+  // PARSE REFERENCES FROM WIKITEXT
+  // Finds every <ref>...</ref> block
+  // ============================================================
+  function parseRefs(wikitext) {
+    var pattern =
+      /<ref(?:\s+name\s*=\s*["']?([^"'/>]+)["']?)?\s*>([\s\S]*?)<\/ref>/gi;
+    var refs = [];
+    var m;
+    var i = 1;
+    while ((m = pattern.exec(wikitext)) !== null) {
+      refs.push({
+        index: i++,
+        name: m[1] ? m[1].trim() : null,
+        content: m[2].trim()
+      });
+    }
+    return refs;
+  }
+
+  // ============================================================
+  // BUILD IDENTIFIER MAP
+  // Maps each identifier to the refs that use it
+  // ============================================================
+  function buildIdentifierMap(refs) {
+    var map = {};
+    refs.forEach(function(ref) {
+      extractIdentifiers(ref.content).forEach(function(id) {
+        if (!map[id.normalized]) {
+          map[id.normalized] = {
+            type: id.type,
+            raw: id.raw,
+            refs: []
+          };
+        }
+        var already = map[id.normalized].refs.find(function(r) {
+          return r.index === ref.index;
+        });
+        if (!already) {
+          map[id.normalized].refs.push(ref);
+        }
+      });
+    });
+    return map;
+  }
+
+  // ============================================================
+  // TAB 1 — SCANNER
+  // ============================================================
+  function quickScan(title) {
+    document.getElementById('scanInput').value = title;
+    scanArticle();
+  }
+
+  function scanArticle() {
+    var title = document.getElementById('scanInput').value.trim();
+    if (!title) return;
+
+    document.getElementById('scanLoading').classList.add('active');
+    document.getElementById('scanResults').classList.remove('active');
+    document.getElementById('scanError').classList.remove('active');
+    document.getElementById('scanBtn').disabled = true;
+    document.getElementById('noDupesMsg').classList.remove('active');
+
+    document.getElementById('scanLoadingMsg').textContent =
+      'Fetching article from Wikipedia API...';
+
+    fetchArticle(title)
+    .then(function(result) {
+      document.getElementById('scanLoadingMsg').textContent =
+        'Extracting and analyzing references...';
+
+      var refs = parseRefs(result.wikitext);
+
+      if (refs.length === 0) {
+        throw new Error(
+          'No references found in this article. Try another title.'
+        );
+      }
+
+      var map = buildIdentifierMap(refs);
+      var dupes = Object.entries(map).filter(function(entry) {
+        return entry[1].refs.length > 1;
+      });
+
+      var affectedIndices = new Set();
+      dupes.forEach(function(entry) {
+        entry[1].refs.forEach(function(r) {
+          affectedIndices.add(r.index);
+        });
+      });
+
+      // Fill stats
+      document.getElementById('scanResultsTitle').textContent =
+        'Results for: ' + result.title;
+      document.getElementById('statTotal').textContent = refs.length;
+      document.getElementById('statDupes').textContent = dupes.length;
+      document.getElementById('statAffected').textContent =
+        affectedIndices.size;
+      document.getElementById('statDupesNote').textContent =
+        dupes.length === 0
+          ? '✅ None found'
+          : '⚠️ ' + dupes.length + ' group(s) found';
+
+      if (dupes.length === 0) {
+        document.getElementById('noDupesMsg').classList.add('active');
+        document.getElementById('dupesSection').style.display = 'none';
+      } else {
+        document.getElementById('dupesSection').style.display = 'block';
+        document.getElementById('dupesWarning').classList.add('active');
+
+        // Build duplicates table
+        var table = document.getElementById('dupeTable');
+        while (table.rows.length > 1) table.deleteRow(1);
+
+        dupes.sort(function(a, b) {
+          return b[1].refs.length - a[1].refs.length;
+        });
+
+        dupes.forEach(function(entry, i) {
+          var identifier = entry[0];
+          var data = entry[1];
+          var row = table.insertRow();
+
+          // Number
+          row.insertCell().textContent = i + 1;
+
+          // Type badge
+          var typeCell = row.insertCell();
+          var badge = document.createElement('span');
+          badge.className = 'badge badge-' + data.type.toLowerCase();
+          badge.textContent = data.type;
+          typeCell.appendChild(badge);
+
+          // Identifier
+          var idCell = row.insertCell();
+          var idDiv = document.createElement('div');
+          idDiv.className = 'mono';
+          idDiv.textContent = identifier.length > 70
+            ? identifier.substring(0, 70) + '...'
+            : identifier;
+          idCell.appendChild(idDiv);
+
+          // Refs affected
+          var refsCell = row.insertCell();
+          data.refs.forEach(function(ref) {
+            var d = document.createElement('div');
+            d.className = 'ref-note';
+            d.textContent = '#' + ref.index +
+              (ref.name ? ' (' + ref.name + ')' : '');
+            refsCell.appendChild(d);
+          });
+        });
+      }
+
+      document.getElementById('scanLoading').classList.remove('active');
+      document.getElementById('scanResults').classList.add('active');
+    })
+    .catch(function(err) {
+      document.getElementById('scanLoading').classList.remove('active');
+      document.getElementById('scanError').classList.add('active');
+      document.getElementById('scanErrorMsg').textContent = err.message;
+    })
+    .finally(function() {
+      document.getElementById('scanBtn').disabled = false;
+    });
+  }
+
+  document.getElementById('scanInput').addEventListener('keydown',
+    function(e) { if (e.key === 'Enter') scanArticle(); }
+  );
+
+  // ============================================================
+  // TAB 2 — EDITOR SIMULATION
+  // ============================================================
+  function loadEditorArticle() {
+    var title = document.getElementById('editorInput').value.trim();
+    if (!title) return;
+
+    document.getElementById('editorLoading').classList.add('active');
+    document.getElementById('existingRefs').classList.remove('active');
+
+    fetchArticle(title)
+    .then(function(result) {
+      articleRefs = parseRefs(result.wikitext);
+      identifierMap = buildIdentifierMap(articleRefs);
+
+      document.getElementById('veTitle').textContent = result.title;
+      document.getElementById('vePreview').innerHTML =
+        'This article has <strong>' + articleRefs.length +
+        ' references</strong> loaded. ' +
+        'Click <strong>Cite</strong> in the toolbar to add a new reference. ' +
+        'If the URL, DOI or ISBN already exists in the article, ' +
+        'the duplicate alert will appear.';
+
+      // Populate existing refs list
+      document.getElementById('existingRefsCount').textContent =
+        articleRefs.length;
+      var list = document.getElementById('existingRefsList');
+      list.innerHTML = '';
+
+      var limit = Math.min(articleRefs.length, 30);
+      for (var i = 0; i < limit; i++) {
+        var ref = articleRefs[i];
+        var row = document.createElement('div');
+        row.className = 'existing-ref-row';
+        row.innerHTML =
+          '<span class="ref-num">[' + ref.index + ']</span>' +
+          '<span class="ref-content">' +
+          ref.content.substring(0, 120) +
+          (ref.content.length > 120 ? '...' : '') +
+          '</span>';
+        list.appendChild(row);
+      }
+
+      if (articleRefs.length > 30) {
+        var more = document.createElement('div');
+        more.style.padding = '6px 12px';
+        more.style.fontSize = '12px';
+        more.style.color = '#54595d';
+        more.textContent =
+          '... and ' + (articleRefs.length - 30) + ' more references';
+        list.appendChild(more);
+      }
+
+      document.getElementById('existingRefs').classList.add('active');
+      showToast('✅ Loaded ' + articleRefs.length +
+        ' references from "' + result.title + '"');
+    })
+    .catch(function(err) {
+      showToast('❌ Error: ' + err.message);
+    })
+    .finally(function() {
+      document.getElementById('editorLoading').classList.remove('active');
+    });
+  }
+
+  document.getElementById('editorInput').addEventListener('keydown',
+    function(e) { if (e.key === 'Enter') loadEditorArticle(); }
+  );
+
+  function openAddRef() {
+    if (articleRefs.length === 0) {
+      showToast('⚠️ Please load an article first');
+      return;
+    }
+    document.getElementById('addRefPanel').classList.add('active');
+    document.getElementById('newRefInput').value = '';
+    document.getElementById('autocomplete').classList.remove('active');
+    document.getElementById('newRefInput').focus();
+  }
+
+  function closeAddRef() {
+    document.getElementById('addRefPanel').classList.remove('active');
+    document.getElementById('autocomplete').classList.remove('active');
+  }
+
+  function onRefInput(value) {
+    if (value.length < 6) {
+      document.getElementById('autocomplete').classList.remove('active');
+      return;
+    }
+
+    var normalizedInput = normalizeURL(value);
+    var suggestions = [];
+
+    Object.entries(identifierMap).forEach(function(entry) {
+      var key = entry[0];
+      var val = entry[1];
+      if (
+        key.includes(normalizedInput) ||
+        normalizedInput.includes(key.substring(0, 15))
+      ) {
+        suggestions.push({ key: key, val: val });
+      }
+    });
+
+    var box = document.getElementById('autocomplete');
+
+    if (suggestions.length > 0 && value.length > 10) {
+      box.innerHTML = suggestions.slice(0, 5).map(function(s) {
+        return (
+          '<div class="autocomplete-item" onclick="selectSuggestion(\'' +
+          s.key.replace(/'/g, "\\'") + '\')">' +
+          '<span class="autocomplete-label">Already in article ' +
+          '(Ref #' + s.val.refs[0].index + '): </span>' +
+          s.key.substring(0, 80) +
+          (s.key.length > 80 ? '...' : '') +
+          '</div>'
+        );
+      }).join('');
+      box.classList.add('active');
+    } else {
+      box.classList.remove('active');
+    }
+  }
+
+  function selectSuggestion(key) {
+    var entry = identifierMap[key];
+    if (entry) {
+      document.getElementById('autocomplete').classList.remove('active');
+      showDupeAlert(key, entry);
+    }
+  }
+
+  function submitRef() {
+    var value = document.getElementById('newRefInput').value.trim();
+    if (!value) return;
+
+    document.getElementById('autocomplete').classList.remove('active');
+
+    // Extract identifiers from whatever the user typed
+    var inputIds = extractIdentifiers(value);
+
+    // Also try as a plain URL
+    var plain = normalizeURL(value);
+    if (plain.length > 5) {
+      inputIds.push({ type: 'URL', raw: value, normalized: plain });
+    }
+
+    if (inputIds.length === 0) {
+      closeAddRef();
+      showToast('✅ Reference added — no duplicate found');
+      return;
+    }
+
+    var found = null;
+    var mapEntries = Object.entries(identifierMap);
+
+    for (var i = 0; i < inputIds.length; i++) {
+      var inputId = inputIds[i].normalized;
+      for (var j = 0; j < mapEntries.length; j++) {
+        var key = mapEntries[j][0];
+        var val = mapEntries[j][1];
+        if (
+          key === inputId ||
+          key.includes(inputId) ||
+          inputId.includes(key)
+        ) {
+          found = { key: key, val: val };
+          break;
+        }
+      }
+      if (found) break;
+    }
+
+    if (found) {
+      showDupeAlert(found.key, found.val);
+    } else {
+      closeAddRef();
+      showToast('✅ Reference added — no duplicate found');
+    }
+  }
+
+  function showDupeAlert(identifier, entry) {
+    var refNums = entry.refs.map(function(r) {
+      return '#' + r.index;
+    }).join(', ');
+
+    var shortId = identifier.length > 60
+      ? identifier.substring(0, 60) + '...'
+      : identifier;
+
+    document.getElementById('dupeAlertMsg').innerHTML =
+      'The identifier <strong>' + shortId + '</strong> is already ' +
+      'used in this article (Reference' +
+      (entry.refs.length > 1 ? 's ' : ' ') + refNums + '). ' +
+      'Would you like to reuse the existing reference instead ' +
+      'of creating a duplicate?';
+
+    var firstRef = entry.refs[0];
+    document.getElementById('dupeExistingContent').textContent =
+      '[' + firstRef.index + ']' +
+      (firstRef.name ? ' name="' + firstRef.name + '"' : '') +
+      ': ' +
+      firstRef.content.substring(0, 200) +
+      (firstRef.content.length > 200 ? '...' : '');
+
+    document.getElementById('overlay').classList.add('active');
+    document.getElementById('dupeAlert').classList.add('active');
+  }
+
+  function closeDupeAlert(action) {
+    document.getElementById('overlay').classList.remove('active');
+    document.getElementById('dupeAlert').classList.remove('active');
+    closeAddRef();
+
+    if (action === 'reuse') {
+      showToast('♻️ Existing reference reused — no duplicate created!');
+    } else if (action === 'continue') {
+      showToast('➕ New reference added (duplicate noted)');
+    }
+  }
+
+  document.getElementById('newRefInput').addEventListener('keydown',
+    function(e) {
+      if (e.key === 'Enter') submitRef();
+      if (e.key === 'Escape') closeAddRef();
+    }
+  );
+
+  // ============================================================
+  // TOAST
+  // ============================================================
+  function showToast(msg) {
+    var toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('active');
+    setTimeout(function() {
+      toast.classList.remove('active');
+    }, 3000);
+  }
+
+</script>
+</body>
+</html>
