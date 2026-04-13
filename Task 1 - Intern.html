@@ -28,30 +28,23 @@
                 {"page_id": 6549130, "creation_date": "2021-04-10", "title": "Zezico Guajajara"},
             ];
 
-            //YOUR CODE HERE
-
-            //array of month names to convert number to word 
-            const months = [
-                "January", "February", "March", "April",
-                "May", "June", "July", "August",
-                "September", "October", "November", "December"
-            ];
-
-            let output = ""; //here, to store all formatted articles 
-            //looping through each article in the data array
+            // YOUR CODE HERE
+            let output = "";
+        
             data.forEach(function(article) {
-            let parts = article.creation_date.split("-"); //Splitting the data into year, month and day
-            let year = parts[0];
-            let month = months[parseInt(parts[1]) - 1]; //converting month number to month name 
-            let day = parseInt(parts[2]);
-            
-            //building formatted sentence for each article
-            output += `Article "${article.title}" (Page ID ${article.page_id}) was created at ${month} ${day}, ${year}.\n`;
+                let parts = article.creation_date.split("-");
+                let year = parts[0];
+                let month = parts[1];
+                let day = parts[2];
+        
+                // using Date to format the month name
+                let date = new Date(year, parseInt(month) - 1, parseInt(day));
+                let monthName = date.toLocaleString("en-US", { month: "long" });
+        
+                output += `Article "${article.title}" (Page ID ${article.page_id}) was created at ${monthName} ${parseInt(day)}, ${year}.\n`;
             });
-            //displaying final output in results section. 
+        
             document.getElementById("results").innerText = output;
-
-
 
         </script>
         <script>
